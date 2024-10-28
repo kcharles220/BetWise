@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { Menu, X, User, Bell, Search } from 'lucide-react';
 import { format } from 'date-fns';
-import "@fontsource/poppins"; // Ensure to add this import in your CSS setup for font styling.
-import AuthModal from './components/AuthModal'; // Import the modal component
+import "@fontsource/poppins";
+import AuthModal from './components/AuthModal';
+import Image from 'next/image';
 
 interface MatchData {
   _id: string;
@@ -18,40 +19,64 @@ interface MatchData {
   };
   match_time: string;
 }
+
+interface TeamData {
+  _id: string;
+  name: string;
+  country: string;
+  logo_url: string;
+  founded: number;
+  stadium: string;
+  league: string;
+}
+
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredMatch, setHoveredMatch] = useState<string | null>(null);
   const [featuredMatches, setFeaturedMatches] = useState<MatchData[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [teamLogos, setTeamLogos] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    const fetchMatches = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/markets');
-        const data = await response.json();
-        setFeaturedMatches(data);
+        // Fetch matches
+        const matchesResponse = await fetch('http://localhost:8080/markets');
+        if (matchesResponse.headers.get("content-type")?.includes("application/json")) {
+          const matches = await matchesResponse.json();
+          setFeaturedMatches(matches);
+        }
+
+        // Fetch team data
+        const teamsResponse = await fetch('http://localhost:8080/teams');
+        const teamsData: TeamData[] = await teamsResponse.json();
+        
+        // Create a map of team names to their logo URLs
+        const logoMap = teamsData.reduce((acc: { [key: string]: string }, team) => {
+          acc[team.name] = team.logo_url;
+          return acc;
+        }, {});
+        
+        setTeamLogos(logoMap);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
 
-    fetchMatches();
+    fetchData();
   }, []);
 
   const formatMatchTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d, h:mm a');
+      return format(new Date(dateString), 'MMM d, hh:mm');
     } catch {
       return dateString;
     }
   };
 
-
-
-
+  const popularSports = Array.from(new Set(featuredMatches.map(match => match.sport)));
   const trendingCategories = ["Champions League", "Europa League", "Premier League", "World Cup 2024"];
-  const popularSports = ["Football", "Basketball", "Tennis", "MMA", "F1"];
 
   return (
     <div className="min-h-screen bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
@@ -115,7 +140,14 @@ export default function Home() {
       {/* Main Content */}
       <main className="container mx-auto pt-20 h-[calc(100vh-80px)] grid grid-cols-12 gap-8">
         {/* Left Column - Scrollable */}
-        <aside className="col-span-3 overflow-y-auto h-full pb-8">
+        <aside className="col-span-3 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
+  [&::-webkit-scrollbar-track]:rounded-full
+  [&::-webkit-scrollbar-track]:bg-gray-100
+  [&::-webkit-scrollbar-thumb]:rounded-full
+  [&::-webkit-scrollbar-thumb]:bg-gray-300
+  dark:[&::-webkit-scrollbar-track]:bg-neutral-700
+  dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
+  pr-2">
           <section className="mb-6">
             <h2 className="text-xl font-semibold mb-4">🔥Trending</h2>
             <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
@@ -131,7 +163,9 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4">Sports</h2>
             <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
               {popularSports.map((sport, index) => (
+                
                 <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">
+                  
                   {sport}
                 </li>
               ))}
@@ -140,9 +174,16 @@ export default function Home() {
         </aside>
 
         {/* Center Column - Scrollable */}
-        <section className="col-span-6 overflow-y-auto h-full pb-8 ">
-          <h2 className="text-xl font-semibold mb-6 sticky top-0 bg-[#1E1E1E] py-4 ">Featured Matches</h2>
+        <section className="col-span-6 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
+          [&::-webkit-scrollbar-track]:rounded-full
+          [&::-webkit-scrollbar-track]:bg-gray-100
+          [&::-webkit-scrollbar-thumb]:rounded-full
+          [&::-webkit-scrollbar-thumb]:bg-gray-300
+          dark:[&::-webkit-scrollbar-track]:bg-neutral-700
+          dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
+          pr-2">
           <div className="space-y-6">
+
             {featuredMatches.map((match) => (
               <div
                 key={match._id}
@@ -156,16 +197,37 @@ export default function Home() {
                   <span>{formatMatchTime(match.match_time)}</span>
                 </div>
                 <div className="flex justify-between items-center text-center mb-4">
-                  <div className="flex-1 font-semibold text-lg">{match.home_team}</div>
-                  <div className="text-[#29C5F6]">vs</div>
-                  <div className="flex-1 font-semibold text-lg">{match.away_team}</div>
+                  <div className="flex-1 flex items-center justify-end gap-3">
+                    <span className="font-semibold ">{match.home_team}</span>
+                    {teamLogos[match.home_team] && (
+                      <Image 
+                      height={45} width={45}
+                        className=" object-contain"
+                        src={teamLogos[match.home_team]} 
+                        alt={`${match.home_team} logo`} 
+                      />
+                    )}
+                  </div>
+                  <div className="text-[#29C5F6] mx-4">x</div>
+                  <div className="flex-1 flex items-center justify-start gap-3">
+                    {teamLogos[match.away_team] && (
+                      <Image height={45} width={45}
+                        
+                        className=" object-contain"
+                        src={teamLogos[match.away_team]} 
+                        alt={`${match.away_team} logo`} 
+                      />
+                    )}
+                    <span className="font-semibold">{match.away_team}</span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {['win', 'draw', 'lose'].map((type) => (
                     <button
                       key={type}
-                      className={`bg-[#1E1E1E] hover:bg-[#29C5F6] py-3 rounded text-center transition-all transform hover:scale-105 font-medium ${hoveredMatch === match._id ? 'hover:shadow-lg' : ''
-                        }`}
+                      className={`bg-[#1E1E1E] hover:bg-[#29C5F6] py-3 rounded text-center transition-all transform hover:scale-105 font-medium ${
+                        hoveredMatch === match._id ? 'hover:shadow-lg' : ''
+                      }`}
                     >
                       {match.odds[type as keyof typeof match.odds]}
                     </button>
@@ -179,7 +241,7 @@ export default function Home() {
         {/* Right Column - Fixed with scrollable content */}
         <aside className="col-span-3 h-full">
           <div className="bg-[#2A2A2A] rounded-lg p-6 h-full">
-            <h2 className="text-xl font-semibold mb-4 sticky top-0">Betting Slip</h2>
+            <h2 className="text-xl font-semibold mb-4 top-0">Betting Slip</h2>
             <div className="overflow-y-auto h-[calc(100%-3rem)]">
               <div className="text-center text-gray-400 py-10">No bets added yet</div>
             </div>
