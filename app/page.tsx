@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Menu, X, User, Bell, ChevronDown, Search } from 'lucide-react';
-
-// Font import
+import { Menu, X, User, Bell, Search } from 'lucide-react';
+import { format } from 'date-fns';
 import "@fontsource/poppins"; // Ensure to add this import in your CSS setup for font styling.
+import AuthModal from './components/AuthModal'; // Import the modal component
+
 interface MatchData {
   _id: string;
   sport: string;
@@ -19,24 +20,35 @@ interface MatchData {
 }
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [hoveredMatch, setHoveredMatch] = useState(null);
+  const [hoveredMatch, setHoveredMatch] = useState<string | null>(null);
   const [featuredMatches, setFeaturedMatches] = useState<MatchData[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
     const fetchMatches = async () => {
       try {
         const response = await fetch('http://localhost:8080/markets');
         const data = await response.json();
-        console.log(data)
-        setFeaturedMatches(data); // Armazena os dados recebidos no estado
+        setFeaturedMatches(data);
       } catch (error) {
-        console.error('Erro ao obter dados:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
     fetchMatches();
   }, []);
-  
+
+  const formatMatchTime = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMM d, h:mm a');
+    } catch {
+      return dateString;
+    }
+  };
+
+
+
 
   const trendingCategories = ["Champions League", "Europa League", "Premier League", "World Cup 2024"];
   const popularSports = ["Football", "Basketball", "Tennis", "MMA", "F1"];
@@ -44,15 +56,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
       {/* Header */}
-      <header className="bg-[#151515] border-b border-[#00000020] shadow-md fixed w-full top-0 z-50">
+      <header className="bg-[#151515] border-b border-[#00000020] shadow-md fixed w-full top-0 z-10">
         <nav className="container mx-auto py-2.5">
           <div className="flex items-center justify-between">
-            {/* Logo */}
             <h1 className="text-2xl font-bold transform transition-all cursor-pointer">
               BetWise
             </h1>
 
-            {/* Desktop Navigation - Centered */}
             <div className="hidden md:flex items-center gap-10 absolute left-1/2 transform -translate-x-1/2">
               <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Sports</a>
               <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Live</a>
@@ -60,7 +70,6 @@ export default function Home() {
               <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Battle</a>
             </div>
 
-            {/* User Actions */}
             <div className="hidden md:flex items-center gap-4">
               <button className="p-2 hover:bg-[#1E1E1E] rounded-lg transition-all transform hover:scale-105">
                 <Search className="w-5 h-5" />
@@ -68,13 +77,15 @@ export default function Home() {
               <button className="p-2 hover:bg-[#1E1E1E] rounded-lg transition-all transform hover:scale-105">
                 <Bell className="w-5 h-5" />
               </button>
-              <button className="flex items-center gap-2 bg-[#0092CA] hover:bg-[#0082B5] px-6 py-2 rounded-lg transition-all font-medium">
+              <button
+                className="flex items-center gap-2 bg-[#0092CA] hover:bg-[#0082B5] px-6 py-2 rounded-lg transition-all font-medium"
+                onClick={() => setShowAuthModal(true)}
+              >
                 <User className="w-4 h-4" />
                 Login
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               className="md:hidden p-2 hover:bg-[#222831] rounded-lg transition-all"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -83,14 +94,16 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {isMenuOpen && (
             <div className="md:hidden mt-4 space-y-4">
               <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Sports</a>
               <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Live</a>
               <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Ranking</a>
               <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Battle</a>
-              <button className="w-full flex items-center justify-center gap-2 bg-[#0092CA] hover:bg-[#0082B5] px-4 py-2 rounded-lg">
+              <button
+                className="w-full flex items-center justify-center gap-2 bg-[#0092CA] hover:bg-[#0082B5] px-4 py-2 rounded-lg"
+                onClick={() => setShowAuthModal(true)}
+              >
                 <User className="w-4 h-4" />
                 Login
               </button>
@@ -100,31 +113,35 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto  py-20 grid grid-cols-12 gap-8 ">
-        {/* Left Column */}
-        <aside className="col-span-3 space-y-6">
-          <section>
+      <main className="container mx-auto pt-20 h-[calc(100vh-80px)] grid grid-cols-12 gap-8">
+        {/* Left Column - Scrollable */}
+        <aside className="col-span-3 overflow-y-auto h-full pb-8">
+          <section className="mb-6">
             <h2 className="text-xl font-semibold mb-4">🔥Trending</h2>
-            <ul className="bg-[#2A2A2A] rounded-lg  hover:shadow-lg transform hover:scale-102 transition-all cursor-pointer shadow-md">
+            <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
               {trendingCategories.map((category, index) => (
-                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">{category}</li>
+                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">
+                  {category}
+                </li>
               ))}
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-4">Sports</h2>
-            <ul className="bg-[#2A2A2A] rounded-lg  hover:shadow-lg transform hover:scale-102 transition-all cursor-pointer shadow-md">
+            <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
               {popularSports.map((sport, index) => (
-                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">{sport}</li>
+                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">
+                  {sport}
+                </li>
               ))}
             </ul>
           </section>
         </aside>
 
-        {/* Center Column */}
-        <section className="col-span-6">
-          <h2 className="text-xl font-semibold mb-6">Featured Matches</h2>
+        {/* Center Column - Scrollable */}
+        <section className="col-span-6 overflow-y-auto h-full pb-8 ">
+          <h2 className="text-xl font-semibold mb-6 sticky top-0 bg-[#1E1E1E] py-4 ">Featured Matches</h2>
           <div className="space-y-6">
             {featuredMatches.map((match) => (
               <div
@@ -136,7 +153,7 @@ export default function Home() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="font-medium">{match.sport}</div>
                   <span className="text-gray-400">{match.competition}</span>
-                  <span>{match.match_time}</span>
+                  <span>{formatMatchTime(match.match_time)}</span>
                 </div>
                 <div className="flex justify-between items-center text-center mb-4">
                   <div className="flex-1 font-semibold text-lg">{match.home_team}</div>
@@ -147,7 +164,8 @@ export default function Home() {
                   {['win', 'draw', 'lose'].map((type) => (
                     <button
                       key={type}
-                      className={`bg-[#1E1E1E] hover:bg-[#29C5F6] py-3 rounded text-center transition-all transform hover:scale-105 font-medium ${hoveredMatch === match._id ? 'hover:shadow-lg' : ''}`}
+                      className={`bg-[#1E1E1E] hover:bg-[#29C5F6] py-3 rounded text-center transition-all transform hover:scale-105 font-medium ${hoveredMatch === match._id ? 'hover:shadow-lg' : ''
+                        }`}
                     >
                       {match.odds[type as keyof typeof match.odds]}
                     </button>
@@ -158,14 +176,22 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Right Column */}
-        <aside className="col-span-3 bg-[#2A2A2A] rounded-lg p-6 divide-y">
-          <h2 className="text-xl font-semibold mb-4 ">Betting Slip</h2>
-          <div className="text-center text-gray-400 py-10">No bets added yet</div>
+        {/* Right Column - Fixed with scrollable content */}
+        <aside className="col-span-3 h-full">
+          <div className="bg-[#2A2A2A] rounded-lg p-6 h-full">
+            <h2 className="text-xl font-semibold mb-4 sticky top-0">Betting Slip</h2>
+            <div className="overflow-y-auto h-[calc(100%-3rem)]">
+              <div className="text-center text-gray-400 py-10">No bets added yet</div>
+            </div>
+          </div>
         </aside>
       </main>
-
-      {/* Footer */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        isSignUp={isSignUp}
+        onToggleMode={() => setIsSignUp(!isSignUp)}
+      />      {/* Footer */}
       <footer className="bg-[#151515] border-t border-[#00000020] mt-12">
         <div className="container mx-auto px-4 py-8">
           <div className="grid md:grid-cols-4 gap-8">
