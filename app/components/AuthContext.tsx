@@ -22,54 +22,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
-  // Initialize axios interceptors
   useEffect(() => {
-    const requestInterceptor = axios.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    const responseInterceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          try {
-            await refreshToken();
-            return axios(originalRequest);
-          } catch (refreshError) {
-            await logout();
-            return Promise.reject(refreshError);
-          }
-        }
-        return Promise.reject(error);
+    const initializeAuth = async () => {
+      try {
+        await refreshToken();
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
-    );
-
-    return () => {
-      axios.interceptors.request.eject(requestInterceptor);
-      axios.interceptors.response.eject(responseInterceptor);
     };
+    initializeAuth();
   }, []);
 
   const refreshToken = async () => {
     try {
       const response = await axios.post('http://localhost:8080/auth/refresh-token', {}, {
-        withCredentials: true
+        withCredentials: true,
       });
-      
       const { accessToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
-      
-      return accessToken;
+      setUser(response.data.user);
+      setIsAuthenticated(true);
     } catch (error) {
       localStorage.removeItem('accessToken');
       setUser(null);
@@ -77,16 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
   };
+  
 
   const login = async (credentials: any) => {
     try {
-      const response = await axios.post('http://localhost:8080/auth/login', credentials);
+      const response = await axios.post('http://localhost:8080/auth/login', credentials, {
+        withCredentials: true,
+      });
       const { accessToken, user } = response.data;
-      
       localStorage.setItem('accessToken', accessToken);
       setUser(user);
       setIsAuthenticated(true);
-      
       return response.data;
     } catch (error) {
       throw error;
@@ -95,7 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (userData: any) => {
     try {
-      const response = await axios.post('http://localhost:8080/auth/register', userData);
+      const response = await axios.post('http://localhost:8080/auth/register', userData, {
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -105,15 +83,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await axios.post('http://localhost:8080/auth/logout', {}, {
-        withCredentials: true
+        withCredentials: true,
       });
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
       localStorage.removeItem('accessToken');
       setUser(null);
       setIsAuthenticated(false);
       router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -125,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
-      refreshToken
+      refreshToken,
     }}>
       {children}
     </AuthContext.Provider>

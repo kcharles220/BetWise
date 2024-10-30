@@ -8,7 +8,7 @@ interface HeaderProps {
   setIsMenuOpen: (isOpen: boolean) => void;
   user: {
     isLoggedIn: boolean;
-    balance: number;
+    balance: number ;
   };
   isAuthenticated: boolean;
   setShowAuthModal: (show: boolean) => void;
@@ -31,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen, user, isAuth
     return (
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-white bg-[#2A2A2A] p-2 rounded-full">
-          <span>${user.balance.toFixed(2)}</span>
+          <span>balance</span>
           <Link href="/deposit">
             <button className="p-1 bg-[#0092CA] rounded-full hover:bg-[#0082B5] transition-all">
               <Plus className="w-3 h-3" />
