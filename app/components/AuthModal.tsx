@@ -1,8 +1,11 @@
-'use client';
-import { useState } from 'react';
-import { X, Eye, EyeOff } from 'lucide-react';
+//AuthModal.tsx
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { X, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { useAuth } from './AuthContext';
+import { AuthFormData, AuthResponse } from '../types';
+
 import axios from 'axios';
-import { useRouter } from 'next/navigation'; 
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -11,70 +14,122 @@ interface AuthModalProps {
   onToggleMode: () => void;
 }
 
-interface AuthFormData {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-interface AuthFormData {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-const AuthModal = ({ isOpen, onClose, isSignUp, onToggleMode }: AuthModalProps) => {
+const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  isSignUp,
+  onToggleMode,
+}) => {
   const router = useRouter();
+  const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [enable2FA, setEnable2FA] = useState(false);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [twoFactorQR, setTwoFactorQR] = useState<string>('');
+  const [verificationRequired, setVerificationRequired] = useState(false);
   const [formData, setFormData] = useState<AuthFormData>({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    twoFactorCode: '',
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      twoFactorCode: '',
+    });
+    setError('');
+    setTwoFactorRequired(false);
+    setVerificationRequired(false);
+    setTwoFactorQR('');
+  };
+
+  const validatePassword = (password: string): boolean => {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    return minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
-    console.log('Form submitted', formData); // Add this for debugging
 
     try {
-      const endpoint = isSignUp ? '/auth/register' : '/auth/login';
-      const payload = isSignUp
-        ? {
+      if (isSignUp) {
+        if (!validatePassword(formData.password)) {
+          setError('Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters');
+          setLoading(false);
+          return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+
+        const response: AuthResponse = await register({
           username: formData.username,
           email: formData.email,
           password: formData.password,
-          enable2FA
+          enable2FA,
+        });
+
+        if (response.requiresVerification) {
+          setVerificationRequired(true);
         }
-        : {
+
+        if (response.twoFactorQR) {
+          setTwoFactorQR(response.twoFactorQR);
+        }
+      } else {
+        const response: AuthResponse = await login({
           username: formData.username,
-          password: formData.password
-        };
+          password: formData.password,
+          twoFactorCode: formData.twoFactorCode,
+        });
 
-      console.log('Sending request to:', `http://localhost:8080${endpoint}`); // Add this for debugging
+        if (response.requires2FA) {
+          setTwoFactorRequired(true);
+          setLoading(false);
+          return;
+        }
 
-      const response = await axios.post(`http://localhost:8080${endpoint}`, payload);
+        if (response.requiresVerification) {
+          setVerificationRequired(true);
+          setLoading(false);
+          return;
+        }
 
-      console.log('Response received:', response.data); // Add this for debugging
-
-      // Store the token
-      localStorage.setItem('token', response.data.token);
-
-      // Set authorization header for future requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-
-      // Close modal and redirect
-      onClose();
-      router.push('/'); // Using next/navigation router
-
+        // Successful login
+        onClose();
+        router.push('');
+      }
     } catch (err: any) {
-      console.error('Auth error:', err); // Add this for debugging
-      setError(err.response?.data?.message || 'An error occurred');
+      console.error('Auth error:', err);
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'An error occurred');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -87,36 +142,32 @@ const AuthModal = ({ isOpen, onClose, isSignUp, onToggleMode }: AuthModalProps) 
     }
 
     try {
+      setLoading(true);
       await axios.post('http://localhost:8080/auth/forgot-password', {
-        email: formData.email
+        email: formData.email,
       });
-      alert('Password reset instructions have been sent to your email');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred');
+      alert('If your email is registered, you will receive password reset instructions');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'An error occurred');
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const isFormValid = () => {
-    if (isSignUp) {
-      return (
-        formData.username &&
-        formData.email &&
-        formData.password &&
-        formData.confirmPassword &&
-        formData.password === formData.confirmPassword
-      );
-    }
-    return formData.username && formData.password;
-  };
-
   if (!isOpen) return null;
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-20"
@@ -127,124 +178,179 @@ const AuthModal = ({ isOpen, onClose, isSignUp, onToggleMode }: AuthModalProps) 
           className="bg-[#2A2A2A] p-8 rounded-lg w-96 shadow-xl border-solid border-[#0092CA] border"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="text-2xl font-bold mb-6">{isSignUp ? 'Sign Up' : 'Login'}</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">
+              {isSignUp ? 'Sign Up' : (twoFactorRequired ? '2FA Verification' : 'Login')}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm mb-1">Username</label>
-              <input
-                type="text"
-                name="username"
-                className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
-                value={formData.username}
-                onChange={handleInputChange}
-              />
+          {error && (
+            <div className=" absolute top-0 text-center py-4 lg:px-4">
+            <div className="p-2 bg-red-800 items-center text-red-100 leading-none lg:rounded-full flex lg:inline-flex" role="alert">
+              <span className="flex rounded-full bg-red-500 uppercase px-2 py-1 text-xs font-bold mr-3">Error</span>
+              <span className="font-semibold mr-2 text-left flex-auto">{error}</span>
             </div>
+          </div>
+          )}
 
-            {isSignUp && (
-              <div>
-                <label className="block text-sm mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-            )}
-
-            <div className="relative">
-              <label className="block text-sm mb-1">Password</label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
-                value={formData.password}
-                onChange={handleInputChange}
-              />
+          {verificationRequired ? (
+            <div className="text-center">
+              <AlertTriangle className="mx-auto h-12 w-12 text-yellow-400 mb-4" />
+              <h3 className="text-xl font-bold mb-4">Email Verification Required</h3>
+              <p className="mb-4">Please check your email and verify your account before continuing.</p>
               <button
-                type="button"
-                className="absolute right-2 top-8 text-gray-400"
-                onClick={() => setShowPassword(!showPassword)}
+                className="w-full py-2 rounded bg-[#0092CA] hover:bg-[#0082B5] font-medium"
+                onClick={onClose}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                Close
               </button>
             </div>
+          ) : twoFactorQR ? (
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-4">Set Up Two-Factor Authentication</h3>
+              <img src={twoFactorQR} alt="2FA QR Code" className="mx-auto mb-4" />
+              <p className="mb-4">Scan this QR code with your authenticator app to complete setup.</p>
+              <button
+                className="w-full py-2 rounded bg-[#0092CA] hover:bg-[#0082B5] font-medium"
+                onClick={onClose}
+              >
+                Complete Setup
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!twoFactorRequired ? (
+                <>
+                  <div>
+                    <label className="block text-sm mb-1">Username</label>
+                    <input
+                      type="text"
+                      name="username"
+                      className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      minLength={3}
+                      required
+                    />
+                  </div>
 
-            {isSignUp && (
-              <>
+                  {isSignUp && (
+                    <div>
+                      <label className="block text-sm mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <label className="block text-sm mb-1">Password</label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      minLength={8}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-8 text-gray-400"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+
+                  {isSignUp && (
+                    <>
+                      <div>
+                        <label className="block text-sm mb-1">Confirm Password</label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="enable2FA"
+                          checked={enable2FA}
+                          onChange={() => setEnable2FA(!enable2FA)}
+                          className="w-4 h-4"
+                        />
+                        <label htmlFor="enable2FA" className="text-sm">
+                          Enable Two-Factor Authentication
+                        </label>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
                 <div>
-                  <label className="block text-sm mb-1">Confirm Password</label>
+                  <label className="block text-sm mb-1">2FA Code</label>
                   <input
-                    type="password"
-                    name="confirmPassword"
+                    type="text"
+                    name="twoFactorCode"
                     className="w-full p-2 rounded bg-[#1E1E1E] border border-[#3A3A3A] focus:border-[#0092CA] outline-none"
-                    value={formData.confirmPassword}
+                    value={formData.twoFactorCode}
                     onChange={handleInputChange}
+                    required
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={6}
                   />
                 </div>
+              )}
 
-                <div className="flex items-center gap-2">
-                  <label className="text-sm">Enable 2FA</label>
-                  <button
-                    type="button"
-                    className={`w-12 h-6 rounded-full transition-colors ${enable2FA ? 'bg-[#0092CA]' : 'bg-[#3A3A3A]'
-                      }`}
-                    onClick={() => setEnable2FA(!enable2FA)}
-                  >
-                    <div
-                      className={`w-4 h-4 bg-white rounded-full transition-transform ${enable2FA ? 'translate-x-7' : 'translate-x-1'
-                        }`}
-                    />
-                  </button>
-                </div>
-              </>
-            )}
-
-            {error && (
-              <div className="p-2 bg-red-500 bg-opacity-10 border border-red-500 rounded text-red-500 text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!isFormValid() || loading}
-              className={`w-full py-2 rounded font-medium transition-all ${isFormValid() && !loading
-                  ? 'bg-[#0092CA] hover:bg-[#0082B5]'
-                  : 'bg-[#3A3A3A] cursor-not-allowed'
-                }`}
-            >
-              {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Login')}
-            </button>
-
-            {!isSignUp && (
               <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="w-full text-sm text-[#0092CA] hover:underline"
+                type="submit"
+                className="w-full py-2 rounded bg-[#0092CA] hover:bg-[#0082B5] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
-                Forgot Password?
+                {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : (twoFactorRequired ? 'Verify' : 'Login'))}
               </button>
-            )}
 
-            <button
-              type="button"
-              className="w-full text-sm text-gray-400 hover:text-white"
-              onClick={onToggleMode}
-            >
-              {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
-            </button>
-          </form>
+              {!isSignUp && !twoFactorRequired && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="w-full text-sm text-gray-400 hover:text-white mt-2"
+                >
+                  Forgot Password?
+                </button>
+              )}
 
-          <button
-            type="button"
-            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-            onClick={onClose}
-          >
-            <X size={24} />
-          </button>
+              <div className="text-center text-sm text-gray-400">
+                {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+                <button
+                  type="button"
+                  onClick={onToggleMode}
+                  className="ml-1 text-[#0092CA] hover:text-[#0082B5]"
+                >
+                  {isSignUp ? 'Login' : 'Sign Up'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
