@@ -82,17 +82,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await axios.post('http://localhost:8080/auth/logout', {}, {
-        withCredentials: true,
-      });
+      // Obtenha o token de autenticação se necessário
+      const token = localStorage.getItem('accessToken');
+      
+      await axios.post(
+        'http://localhost:8080/auth/logout', 
+        {}, 
+        {
+          withCredentials: true,
+          headers: {
+            // Inclui o token no cabeçalho, se estiver disponível
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+        }
+      );
+  
+      // Limpa o token do armazenamento local
       localStorage.removeItem('accessToken');
+      
+      // Atualiza o estado da autenticação
       setUser(null);
       setIsAuthenticated(false);
+      
+      // Redireciona o usuário para a página inicial
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
+  
 
   return (
     <AuthContext.Provider value={{

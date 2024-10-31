@@ -1,20 +1,30 @@
 // components/Header.tsx
-'use client';
-import { Menu, X, User, Bell, Search, Plus } from 'lucide-react';
-import Link from 'next/link';
+"use client";
+import { Menu, X, User, Bell, Search, Plus } from "lucide-react";
+import Link from "next/link";
+import { UserData } from "../types";
+import { useState } from "react";
+import { useAuth } from '../providers/AuthContext';
+import DarkModeToggle from "./DarkModeToggle";
 
 interface HeaderProps {
   isMenuOpen: boolean;
   setIsMenuOpen: (isOpen: boolean) => void;
-  user: {
-    isLoggedIn: boolean;
-    balance: number ;
-  };
+  user: UserData;
   isAuthenticated: boolean;
   setShowAuthModal: (show: boolean) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen, user, isAuthenticated, setShowAuthModal }) => {
+const Header: React.FC<HeaderProps> = ({
+  isMenuOpen,
+  setIsMenuOpen,
+  user,
+  isAuthenticated,
+  setShowAuthModal,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { logout } = useAuth();
+
   const UserSection = () => {
     if (!isAuthenticated) {
       return (
@@ -29,34 +39,104 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen, user, isAuth
     }
 
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 ">
         <div className="flex items-center gap-2 text-white bg-[#2A2A2A] p-2 rounded-full">
-          <span>balance</span>
+          <span>{user.balance}$</span>
           <Link href="/deposit">
             <button className="p-1 bg-[#0092CA] rounded-full hover:bg-[#0082B5] transition-all">
               <Plus className="w-3 h-3" />
             </button>
           </Link>
         </div>
-        <Link href="/profile">
-          <button className="flex items-center justify-center bg-[#2A2A2A] hover:bg-[#353535] p-2 rounded-full transition-all">
+        <div className="relative inline-block text-left " >
+          <button
+            className="flex items-center justify-center bg-[#2A2A2A] hover:bg-[#353535] p-2 rounded-full transition-all"
+            onClick={() => setIsOpen(!isOpen)}
+          >
             <User className="w-6 h-6 text-[#0092CA]" />
           </button>
-        </Link>
+
+          {isOpen && (
+            <div onMouseLeave={() => setIsOpen(false)}
+              className={`absolute right-0 mt-2 w-48 bg-[#2A2A2A] rounded-lg shadow-md transition-transform duration-200  ${
+                isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"
+              }`}
+            >
+              <ul className="py-2">
+                <li>
+                  <a
+                    href="#"
+                    className="block px-4 py-2 text-sm text-white hover:bg-[#353535]"
+                  >
+                    Profile
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="block px-4 py-2 text-sm text-white hover:bg-[#353535]"
+                  >
+                    Settings
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="block px-4 py-2 text-sm text-white hover:bg-[#353535]"
+                  >
+                    Help
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="block px-4 py-2 text-sm text-red-600 hover:bg-[#353535]"
+                    onClick={logout}
+                  >
+                    Logout
+                  </a>
+                </li>
+                      <DarkModeToggle />
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
-    <header className="bg-[#151515] border-b border-[#00000020] shadow-md fixed w-full top-0 z-10">
+    <header className="bg-[#00B2FA] dark:bg-[#151515] border-b border-[#00000020] shadow-md fixed w-full top-0 z-10">
       <nav className="w-full py-2.5 px-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold transform transition-all cursor-pointer">WiseBet</h1>
+          <h1 className="text-2xl font-bold transform transition-all cursor-pointer">
+            WiseBet
+          </h1>
           <div className="hidden md:flex items-center gap-10 absolute left-1/2 transform -translate-x-1/2">
-            <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Sports</a>
-            <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Live</a>
-            <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Ranking</a>
-            <a href="#" className="hover:text-[#0092CA] transition-all font-bold tracking-wide">Battle</a>
+            <a
+              href="#"
+              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+            >
+              Sports
+            </a>
+            <a
+              href="#"
+              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+            >
+              Live
+            </a>
+            <a
+              href="#"
+              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+            >
+              Ranking
+            </a>
+            <a
+              href="#"
+              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+            >
+              Battle
+            </a>
           </div>
           <div className="hidden md:flex items-center gap-4">
             <button className="p-2 hover:bg-[#1E1E1E] rounded-lg transition-all transform hover:scale-105">
@@ -77,10 +157,30 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen, user, isAuth
 
         {isMenuOpen && (
           <div className="md:hidden mt-4 space-y-4">
-            <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Sports</a>
-            <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Live</a>
-            <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Ranking</a>
-            <a href="#" className="block py-2 hover:text-[#0092CA] transition-all">Battle</a>
+            <a
+              href="#"
+              className="block py-2 hover:text-[#0092CA] transition-all"
+            >
+              Sports
+            </a>
+            <a
+              href="#"
+              className="block py-2 hover:text-[#0092CA] transition-all"
+            >
+              Live
+            </a>
+            <a
+              href="#"
+              className="block py-2 hover:text-[#0092CA] transition-all"
+            >
+              Ranking
+            </a>
+            <a
+              href="#"
+              className="block py-2 hover:text-[#0092CA] transition-all"
+            >
+              Battle
+            </a>
             <UserSection />
           </div>
         )}

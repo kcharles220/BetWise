@@ -1,14 +1,14 @@
 //page.tsx
 'use client';
 import { useEffect, useState } from 'react';
-import { X, User } from 'lucide-react';
+import { X } from 'lucide-react';
 import { format } from 'date-fns';
 import "@fontsource/poppins";
 import AuthModal from './components/AuthModal';
 import Image from 'next/image';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { useAuth } from './components/AuthContext';
+import { useAuth } from './providers/AuthContext';
 
 interface MatchData {
   _id: string;
@@ -181,7 +181,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
+    <div className="min-h-screen bg-white dark:bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
       {/* Header */}
       <Header
         isMenuOpen={isMenuOpen}
@@ -252,9 +252,10 @@ export default function Home() {
                     {teamLogos[match.home_team] && (
                       <Image
                         height={45} width={45}
-                        className="object-contain"
+                        className="object-contain w-auto h-auto"
                         src={teamLogos[match.home_team]}
                         alt={`${match.home_team} logo`}
+        
                       />
                     )}
                   </div>
@@ -263,7 +264,7 @@ export default function Home() {
                     {teamLogos[match.away_team] && (
                       <Image
                         height={45} width={45}
-                        className="object-contain"
+                        className="object-contain w-auto h-auto"
                         src={teamLogos[match.away_team]}
                         alt={`${match.away_team} logo`}
                       />

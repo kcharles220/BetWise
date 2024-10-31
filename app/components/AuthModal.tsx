@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../providers/AuthContext';
 import { AuthFormData, AuthResponse } from '../types';
 
 import axios from 'axios';

@@ -1,8 +1,11 @@
 //layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "./components/AuthContext";
+import { AuthProvider } from "./providers/AuthContext";
+import { Inter } from 'next/font/google'
+import { ThemeProvider } from "./providers/theme-provider";
 
+const inter = Inter({ subsets: ['latin'] })
 
 
 export const metadata: Metadata = {
@@ -21,13 +24,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      
       <body
-        className={`antialiased`}
+        className={`antialiased ${inter.className} bg-background text-foreground dark:bg-background-dark dark:text-foreground-dark`}
       >
+          <ThemeProvider>
+
         <AuthProvider>
-          {children}
+            {children}
 
         </AuthProvider>
+        </ThemeProvider>
+
       </body>
     </html>
   );

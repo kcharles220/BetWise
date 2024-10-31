@@ -1,12 +1,12 @@
 // types.tsx
 
-export interface User {
+export interface UserData {
     id: string;
     username: string;
     email: string;
     balance: number;
     isVerified: boolean;
-    has2FAEnabled: boolean;
+    twoFactorEnabled: boolean;
     createdAt: string;
     lastLogin: string;
   }
@@ -20,7 +20,7 @@ export interface User {
   }
   
   export interface AuthResponse {
-    user: User;
+    user: UserData;
     accessToken: string;
     requires2FA?: boolean;
     requiresVerification?: boolean;
