@@ -40,8 +40,8 @@ const Header: React.FC<HeaderProps> = ({
 
     return (
       <div className="flex items-center gap-4 ">
-        <div className="flex items-center gap-2 text-white bg-[#2A2A2A] p-2 rounded-full">
-          <span>{user.balance}$</span>
+        <div className="flex items-center gap-2 text-black dark:text-white bg-white dark:bg-[#2A2A2A] p-2 rounded-full">
+          <span className="font-semibold pl-1">{user.balance.toFixed(2)}$</span>
           <Link href="/deposit">
             <button className="p-1 bg-[#0092CA] rounded-full hover:bg-[#0082B5] transition-all">
               <Plus className="w-3 h-3" />
@@ -50,10 +50,10 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="relative inline-block text-left " >
           <button
-            className="flex items-center justify-center bg-[#2A2A2A] hover:bg-[#353535] p-2 rounded-full transition-all"
+            className="flex items-center justify-center bg-white dark:bg-[#2A2A2A] hover:bg-[#353535] p-2 rounded-full transition-all"
             onClick={() => setIsOpen(!isOpen)}
           >
-            <User className="w-6 h-6 text-[#0092CA]" />
+            <User className="w-6 h-6 text-black dark:text-[#0092CA]" />
           </button>
 
           {isOpen && (
@@ -115,25 +115,25 @@ const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:flex items-center gap-10 absolute left-1/2 transform -translate-x-1/2">
             <a
               href="#"
-              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+              className="hover:text-black dark:hover:text-[#0092CA] transition-all font-bold tracking-wide"
             >
               Sports
             </a>
             <a
               href="#"
-              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+              className="hover:text-black dark:hover:text-[#0092CA] transition-all font-bold tracking-wide"
             >
               Live
             </a>
             <a
               href="#"
-              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+              className="hover:text-black dark:hover:text-[#0092CA] transition-all font-bold tracking-wide"
             >
               Ranking
             </a>
             <a
               href="#"
-              className="hover:text-[#0092CA] transition-all font-bold tracking-wide"
+              className="hover:text-black dark:hover:text-[#0092CA] transition-all font-bold tracking-wide"
             >
               Battle
             </a>

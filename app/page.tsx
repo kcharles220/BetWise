@@ -181,7 +181,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
+    <div className="min-h-screen bg-gray-200 dark:bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
       {/* Header */}
       <Header
         isMenuOpen={isMenuOpen}
@@ -202,10 +202,10 @@ export default function Home() {
   dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
   pr-1">
           <section className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Trending</h2>
-            <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
+            <h2 className="text-black dark:text-white text-xl font-semibold mb-4">Trending</h2>
+            <ul className="bg-white dark:bg-[#2A2A2A] rounded-lg shadow-md">
               {trendingCategories.map((category, index) => (
-                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">
+                <li key={index} className=" text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200">
                   {category}
                 </li>
               ))}
@@ -213,10 +213,10 @@ export default function Home() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">Sports</h2>
-            <ul className="bg-[#2A2A2A] rounded-lg shadow-md">
+            <h2 className=" text-black dark:text-white text-xl font-semibold mb-4">Sports</h2>
+            <ul className="bg-white dark:bg-[#2A2A2A] rounded-lg shadow-md">
               {popularSports.map((sport, index) => (
-                <li key={index} className="cursor-pointer transition-all pl-5 p-3 hover:bg-[#1E1E1E]">
+                <li key={index} className="text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200">
                   {sport}
                 </li>
               ))}
@@ -237,18 +237,18 @@ export default function Home() {
             {featuredMatches.map((match) => (
               <div
                 key={match._id}
-                className="bg-[#2A2A2A] rounded-lg p-6 hover:shadow-lg transform hover:scale-102 transition-all cursor-pointer shadow-md"
+                className="bg-white dark:bg-[#2A2A2A] rounded-lg p-6 hover:shadow-lg transform hover:scale-102 transition-all cursor-pointer shadow-md"
                 onMouseEnter={() => setHoveredMatch(match._id)}
                 onMouseLeave={() => setHoveredMatch(null)}
               >
                 <div className="flex justify-between items-center mb-4">
-                  <div className="font-medium">{match.sport}</div>
-                  <span className="text-gray-400">{match.competition}</span>
-                  <span>{formatMatchTime(match.match_time)}</span>
+                  <div className="font-medium text-gray-900 dark:text-[#F5F5F5]">{match.sport}</div>
+                  <span className="text-gray-600 dark:text-gray-400">{match.competition}</span>
+                  <span className="font-medium text-gray-900 dark:text-[#F5F5F5]">{formatMatchTime(match.match_time)}</span>
                 </div>
                 <div className="flex justify-between items-center text-center mb-4">
                   <div className="flex-1 flex items-center justify-end gap-3">
-                    <span className="font-semibold">{match.home_team}</span>
+                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">{match.home_team}</span>
                     {teamLogos[match.home_team] && (
                       <Image
                         height={45} width={45}
@@ -269,7 +269,7 @@ export default function Home() {
                         alt={`${match.away_team} logo`}
                       />
                     )}
-                    <span className="font-semibold">{match.away_team}</span>
+                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">{match.away_team}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -285,8 +285,8 @@ export default function Home() {
                         onClick={() => handleBetSelection(match, type)}
                         className={`py-3 rounded text-center transition-all transform hover:scale-105 font-medium
                           ${isSelected
-                            ? 'bg-[#29C5F6] text-white'
-                            : 'bg-[#1E1E1E] hover:bg-[#29C5F6]'
+                            ? 'bg-[#29C5F6] dark:text-white text-black'
+                            : 'bg-gray-200 hover:bg-[#29C5F6] dark:bg-[#1E1E1E] dark:hover:bg-[#29C5F6] text-black dark:text-white'
                           } ${hoveredMatch === match._id ? 'hover:shadow-lg' : ''}`}
                       >
                         <div className="text-lg font-semibold">{match.odds[type]}</div>
@@ -301,12 +301,12 @@ export default function Home() {
 
         {/* Right Column - Betting Slip */}
         <aside className="col-span-3 h-full">
-          <div className="bg-[#2A2A2A] rounded-lg h-[100%] flex flex-col">
+          <div className=" bg-white dark:bg-[#2A2A2A] rounded-lg h-[100%] flex flex-col">
             {/* Fixed header */}
             <div className="flex flex-col h-[100%] overflow-hidden">
 
               <div className="p-6 pb-2">
-                <h2 className="text-xl font-semibold">Betting Slip</h2>
+                <h2 className="text-gray-900 dark:text-[#F5F5F5] text-xl font-semibold">Betting Slip</h2>
               </div>
 
               {/* Scrollable bets container with fixed height */}
