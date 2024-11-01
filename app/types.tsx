@@ -9,6 +9,7 @@ export interface UserData {
     twoFactorEnabled: boolean;
     createdAt: string;
     lastLogin: string;
+    activeBets: number;
   }
   
   export interface AuthFormData {

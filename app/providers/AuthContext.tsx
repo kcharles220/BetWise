@@ -43,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const { accessToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
+      console.log(response.data.user)
       setUser(response.data.user);
       setIsAuthenticated(true);
     } catch (error) {

@@ -1,14 +1,16 @@
 //page.tsx
-'use client';
-import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { format } from 'date-fns';
+"use client";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { format } from "date-fns";
 import "@fontsource/poppins";
-import AuthModal from './components/AuthModal';
-import Image from 'next/image';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import { useAuth } from './providers/AuthContext';
+import AuthModal from "./components/AuthModal";
+import Image from "next/image";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import { useAuth } from "./providers/AuthContext";
+import BetHistory from "./components/BetHistory";
+import Link from "next/link";
 
 interface MatchData {
   _id: string;
@@ -36,13 +38,12 @@ interface TeamData {
 
 interface BetSelection {
   matchId: string;
-  type: 'win' | 'draw' | 'lose';
+  type: "win" | "draw" | "lose";
   odds: number;
   homeTeam: string;
   awayTeam: string;
   competition: string;
 }
-
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -54,42 +55,57 @@ export default function Home() {
   const [selectedBets, setSelectedBets] = useState<BetSelection[]>([]);
   const [betAmount, setBetAmount] = useState<number>(0);
   const { user, isAuthenticated } = useAuth();
-
-
+  const [activeTab, setActiveTab] = useState<"bettingSlip" | "myBets">(
+    "bettingSlip"
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const matchesResponse = await fetch('http://localhost:8080/markets');
-        if (matchesResponse.headers.get("content-type")?.includes("application/json")) {
+        const matchesResponse = await fetch("http://localhost:8080/markets");
+        if (
+          matchesResponse.headers
+            .get("content-type")
+            ?.includes("application/json")
+        ) {
           const matches = await matchesResponse.json();
           setFeaturedMatches(matches);
         }
 
-        const teamsResponse = await fetch('http://localhost:8080/teams');
+        const teamsResponse = await fetch("http://localhost:8080/teams");
         const teamsData: TeamData[] = await teamsResponse.json();
 
-        const logoMap = teamsData.reduce((acc: { [key: string]: string }, team) => {
-          acc[team.name] = team.logo_url;
-          return acc;
-        }, {});
+        const logoMap = teamsData.reduce(
+          (acc: { [key: string]: string }, team) => {
+            acc[team.name] = team.logo_url;
+            return acc;
+          },
+          {}
+        );
 
         setTeamLogos(logoMap);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
   }, []);
 
-  const handleBetSelection = (match: MatchData, type: 'win' | 'draw' | 'lose') => {
-    const existingBetIndex = selectedBets.findIndex(bet => bet.matchId === match._id);
+  const handleBetSelection = (
+    match: MatchData,
+    type: "win" | "draw" | "lose"
+  ) => {
+    const existingBetIndex = selectedBets.findIndex(
+      (bet) => bet.matchId === match._id
+    );
 
     if (existingBetIndex !== -1) {
       // If clicking the same bet type, remove it
       if (selectedBets[existingBetIndex].type === type) {
-        setSelectedBets(selectedBets.filter(bet => bet.matchId !== match._id));
+        setSelectedBets(
+          selectedBets.filter((bet) => bet.matchId !== match._id)
+        );
         return;
       }
       // If clicking a different bet type for the same match, update it
@@ -100,19 +116,22 @@ export default function Home() {
         odds: match.odds[type],
         homeTeam: match.home_team,
         awayTeam: match.away_team,
-        competition: match.competition
+        competition: match.competition,
       };
       setSelectedBets(newBets);
     } else {
       // Add new bet
-      setSelectedBets([...selectedBets, {
-        matchId: match._id,
-        type,
-        odds: match.odds[type],
-        homeTeam: match.home_team,
-        awayTeam: match.away_team,
-        competition: match.competition
-      }]);
+      setSelectedBets([
+        ...selectedBets,
+        {
+          matchId: match._id,
+          type,
+          odds: match.odds[type],
+          homeTeam: match.home_team,
+          awayTeam: match.away_team,
+          competition: match.competition,
+        },
+      ]);
     }
   };
 
@@ -123,20 +142,28 @@ export default function Home() {
   const calculatePotentialWinnings = () => {
     if (betAmount) {
       return (betAmount * calculateTotalOdds()).toFixed(2);
-
-    } else { return 0; }
+    } else {
+      return 0;
+    }
   };
 
   const formatMatchTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d, hh:mm');
+      return format(new Date(dateString), "MMM d, hh:mm");
     } catch {
       return dateString;
     }
   };
 
-  const popularSports = Array.from(new Set(featuredMatches.map(match => match.sport)));
-  const trendingCategories = ["Champions League", "Europa League", "Premier League", "World Cup 2024"];
+  const popularSports = Array.from(
+    new Set(featuredMatches.map((match) => match.sport))
+  );
+  const trendingCategories = [
+    "Champions League",
+    "Europa League",
+    "Premier League",
+    "World Cup 2024",
+  ];
 
   const handlePlaceBet = async () => {
     if (!isAuthenticated) {
@@ -150,20 +177,20 @@ export default function Home() {
         bets: selectedBets,
         totalAmount: betAmount,
         totalOdds: calculateTotalOdds(),
-        potentialWinnings: Number(calculatePotentialWinnings())
+        potentialWinnings: Number(calculatePotentialWinnings()),
       };
 
-      const response = await fetch('http://localhost:8080/bets/place', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8080/bets/place", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
-        body: JSON.stringify(betData)
+        body: JSON.stringify(betData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to place bet');
+        throw new Error("Failed to place bet");
       }
 
       // Clear bet slip after successful bet
@@ -173,15 +200,19 @@ export default function Home() {
       // You might want to update user's balance here
       // Could dispatch an action or call a function from AuthContext to refresh user data
 
-      alert('Bet placed successfully!');
+      alert("Bet placed successfully!");
     } catch (error) {
-      console.error('Error placing bet:', error);
-      alert('Failed to place bet. Please try again.');
+      console.error("Error placing bet:", error);
+      alert("Failed to place bet. Please try again.");
     }
   };
 
+  const slipToggle = (tab: "bettingSlip" | "myBets") => {
+    setActiveTab(tab);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-200 dark:bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
+    <div className="min-h-screen  bg-gray-200 dark:bg-[#1E1E1E] text-[#F5F5F5] font-[Poppins]">
       {/* Header */}
       <Header
         isMenuOpen={isMenuOpen}
@@ -193,19 +224,26 @@ export default function Home() {
       {/* Main Content */}
       <main className="w-full px-5 pt-20 h-[calc(100vh-20px)] grid grid-cols-12 gap-4">
         {/* Left Column - Scrollable */}
-        <aside className="col-span-3 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
+        <aside
+          className="col-span-3 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
   [&::-webkit-scrollbar-track]:rounded-full
   [&::-webkit-scrollbar-track]:bg-gray-100
   [&::-webkit-scrollbar-thumb]:rounded-full
   [&::-webkit-scrollbar-thumb]:bg-gray-300
   dark:[&::-webkit-scrollbar-track]:bg-neutral-700
   dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
-  pr-1">
+  pr-1"
+        >
           <section className="mb-6">
-            <h2 className="text-black dark:text-white text-xl font-semibold mb-4">Trending</h2>
+            <h2 className="text-black dark:text-white text-xl font-semibold mb-4">
+              Trending
+            </h2>
             <ul className="bg-white dark:bg-[#2A2A2A] rounded-lg shadow-md">
               {trendingCategories.map((category, index) => (
-                <li key={index} className=" text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200">
+                <li
+                  key={index}
+                  className=" text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200"
+                >
                   {category}
                 </li>
               ))}
@@ -213,10 +251,15 @@ export default function Home() {
           </section>
 
           <section>
-            <h2 className=" text-black dark:text-white text-xl font-semibold mb-4">Sports</h2>
+            <h2 className=" text-black dark:text-white text-xl font-semibold mb-4">
+              Sports
+            </h2>
             <ul className="bg-white dark:bg-[#2A2A2A] rounded-lg shadow-md">
               {popularSports.map((sport, index) => (
-                <li key={index} className="text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200">
+                <li
+                  key={index}
+                  className="text-black dark:text-white cursor-pointer transition-all pl-5 p-3 dark:hover:bg-[#1E1E1E] hover:bg-gray-200"
+                >
                   {sport}
                 </li>
               ))}
@@ -225,14 +268,16 @@ export default function Home() {
         </aside>
 
         {/* Center Column - Scrollable */}
-        <section className="col-span-6 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
+        <section
+          className="col-span-6 overflow-y-auto h-full pb-8 [&::-webkit-scrollbar]:w-2
           [&::-webkit-scrollbar-track]:rounded-full
           [&::-webkit-scrollbar-track]:bg-gray-100
           [&::-webkit-scrollbar-thumb]:rounded-full
           [&::-webkit-scrollbar-thumb]:bg-gray-300
           dark:[&::-webkit-scrollbar-track]:bg-neutral-700
           dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
-          pr-1">
+          pr-1"
+        >
           <div className="space-y-6">
             {featuredMatches.map((match) => (
               <div
@@ -242,20 +287,28 @@ export default function Home() {
                 onMouseLeave={() => setHoveredMatch(null)}
               >
                 <div className="flex justify-between items-center mb-4">
-                  <div className="font-medium text-gray-900 dark:text-[#F5F5F5]">{match.sport}</div>
-                  <span className="text-gray-600 dark:text-gray-400">{match.competition}</span>
-                  <span className="font-medium text-gray-900 dark:text-[#F5F5F5]">{formatMatchTime(match.match_time)}</span>
+                  <div className="font-medium text-gray-900 dark:text-[#F5F5F5]">
+                    {match.sport}
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {match.competition}
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-[#F5F5F5]">
+                    {formatMatchTime(match.match_time)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-center mb-4">
                   <div className="flex-1 flex items-center justify-end gap-3">
-                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">{match.home_team}</span>
+                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">
+                      {match.home_team}
+                    </span>
                     {teamLogos[match.home_team] && (
                       <Image
-                        height={45} width={45}
+                        height={45}
+                        width={45}
                         className="object-contain w-auto h-auto"
                         src={teamLogos[match.home_team]}
                         alt={`${match.home_team} logo`}
-        
                       />
                     )}
                   </div>
@@ -263,33 +316,41 @@ export default function Home() {
                   <div className="flex-1 flex items-center justify-start gap-3">
                     {teamLogos[match.away_team] && (
                       <Image
-                        height={45} width={45}
+                        height={45}
+                        width={45}
                         className="object-contain w-auto h-auto"
                         src={teamLogos[match.away_team]}
                         alt={`${match.away_team} logo`}
                       />
                     )}
-                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">{match.away_team}</span>
+                    <span className="font-semibold text-gray-900 dark:text-[#F5F5F5]">
+                      {match.away_team}
+                    </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { type: 'win' as const, label: match.home_team },
-                    { type: 'draw' as const, label: 'Draw' },
-                    { type: 'lose' as const, label: match.away_team }
+                    { type: "win" as const, label: match.home_team },
+                    { type: "draw" as const, label: "Draw" },
+                    { type: "lose" as const, label: match.away_team },
                   ].map(({ type, label }) => {
-                    const isSelected = selectedBets.some(bet => bet.matchId === match._id && bet.type === type);
+                    const isSelected = selectedBets.some(
+                      (bet) => bet.matchId === match._id && bet.type === type
+                    );
                     return (
                       <button
                         key={type}
                         onClick={() => handleBetSelection(match, type)}
                         className={`py-3 rounded text-center transition-all transform hover:scale-105 font-medium
                           ${isSelected
-                            ? 'bg-[#29C5F6] dark:text-white text-black'
-                            : 'bg-gray-200 hover:bg-[#29C5F6] dark:bg-[#1E1E1E] dark:hover:bg-[#29C5F6] text-black dark:text-white'
-                          } ${hoveredMatch === match._id ? 'hover:shadow-lg' : ''}`}
+                            ? "bg-[#29C5F6] dark:text-white text-black"
+                            : "bg-gray-200 hover:bg-[#29C5F6] dark:bg-[#1E1E1E] dark:hover:bg-[#29C5F6] text-black dark:text-white"
+                          } ${hoveredMatch === match._id ? "hover:shadow-lg" : ""
+                          }`}
                       >
-                        <div className="text-lg font-semibold">{match.odds[type]}</div>
+                        <div className="text-lg font-semibold">
+                          {match.odds[type]}
+                        </div>
                       </button>
                     );
                   })}
@@ -301,58 +362,116 @@ export default function Home() {
 
         {/* Right Column - Betting Slip */}
         <aside className="col-span-3 h-full">
-          <div className=" bg-white dark:bg-[#2A2A2A] rounded-lg h-[100%] flex flex-col">
-            {/* Fixed header */}
-            <div className="flex flex-col h-[100%] overflow-hidden">
-
-              <div className="p-6 pb-2">
-                <h2 className="text-gray-900 dark:text-[#F5F5F5] text-xl font-semibold">Betting Slip</h2>
-              </div>
-
-              {/* Scrollable bets container with fixed height */}
-              <div className=" overflow-auto px-6 
-            [&::-webkit-scrollbar]:w-2
-          [&::-webkit-scrollbar-track]:rounded-full
-          [&::-webkit-scrollbar-track]:bg-gray-100
-          [&::-webkit-scrollbar-thumb]:rounded-full
-          [&::-webkit-scrollbar-thumb]:bg-gray-300
-          dark:[&::-webkit-scrollbar-track]:bg-neutral-700
-          dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500">
-                {selectedBets.length === 0 ? (
-                  <div className="text-center text-gray-400 py-10">No bets added yet</div>
-                ) : (
-                  <div className="space-y-2 py-2">
-                    {selectedBets.map((bet, index) => (
-                      <div key={index} className="bg-[#1E1E1E] rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="text-sm text-gray-400">{bet.competition}</div>
-                            <div className="font-medium">{bet.homeTeam} vs {bet.awayTeam}</div>
-                          </div>
-                          <button
-                            onClick={() => setSelectedBets(bets => bets.filter((_, i) => i !== index))}
-                            className="text-gray-400 hover:text-red-500"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm">
-                            {bet.type === 'win' ? bet.homeTeam :
-                              bet.type === 'lose' ? bet.awayTeam : 'Draw'}
-                          </div>
-                          <div className="font-semibold text-[#29C5F6]">{bet.odds}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+          <div className="bg-white dark:bg-[#2A2A2A] rounded-lg h-full flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+              <h2
+                className={`text-center w-[50%] h-min p-5 text-xl font-semibold rounded-tl-lg hover:cursor-pointer ${activeTab === "bettingSlip"
+                  ? "text-gray-900 dark:text-[#F5F5F5]"
+                  : "text-gray-400 dark:text-gray-400 dark:bg-[#151515] rounded-br-lg dark:border-[#1E1E1E] dark:hover:bg-[#202020] dark:text-white"
+                  }`}
+                onClick={() => slipToggle("bettingSlip")}
+              >
+                Betting Slip
+              </h2>
+              <h2
+                className={`text-center w-[50%] h-min p-5 text-xl font-semibold rounded-tr-lg hover:cursor-pointer ${activeTab === "myBets"
+                  ? "text-gray-900 dark:text-[#F5F5F5] rounded-tl-lg"
+                  : "text-gray-400 dark:text-gray-400 dark:bg-[#151515] rounded-bl-lg dark:hover:bg-[#202020] dark:text-white"
+                  }`}
+                onClick={() => slipToggle("myBets")}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  My Bets
+                  {user && user.activeBets !== undefined && user.activeBets !== null && (
+                    <span className="w-5 h-5 bg-red-700 rounded-full flex items-center justify-center text-white text-[12px]">
+                      {user.activeBets}
+                    </span>
+                  )}
+                </span>
+              </h2>
             </div>
 
-            {/* Fixed bottom section */}
-            {selectedBets.length > 0 && (
+            {/* Scrollable content */}
+            <div className="flex-1 h-full overflow-hidden">
+
+              <div className=" h-full overflow-auto px-6 
+      [&::-webkit-scrollbar]:w-2
+      [&::-webkit-scrollbar-track]:rounded-full
+      [&::-webkit-scrollbar-track]:bg-gray-100
+      [&::-webkit-scrollbar-thumb]:rounded-full
+      [&::-webkit-scrollbar-thumb]:bg-gray-300
+      dark:[&::-webkit-scrollbar-track]:bg-neutral-700
+      dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500
+      "
+              >
+                {activeTab === "bettingSlip" ? (
+                  selectedBets.length === 0 ? (
+                    <div className="text-center text-gray-400 py-10">
+                      No bets added yet
+                    </div>
+                  ) : (
+                    <div className="space-y-2 py-2">
+                      {selectedBets.map((bet, index) => (
+                        <div
+                          key={index}
+                          className="bg-[#1E1E1E] rounded-lg p-4"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="text-sm text-gray-400">
+                                {bet.competition}
+                              </div>
+                              <div className="font-medium">
+                                {bet.homeTeam} vs {bet.awayTeam}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() =>
+                                setSelectedBets((bets) =>
+                                  bets.filter((_, i) => i !== index)
+                                )
+                              }
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm">
+                              {bet.type === "win"
+                                ? bet.homeTeam
+                                : bet.type === "lose"
+                                  ? bet.awayTeam
+                                  : "Draw"}
+                            </div>
+                            <div className="font-semibold text-[#29C5F6]">
+                              {bet.odds}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <BetHistory isAuthenticated={isAuthenticated} />
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            {activeTab === "myBets" && isAuthenticated && (
+              <div className="border-t border-[#1E1E1E] p-3">
+                <div className="space-y-2">
+                  <Link href="/profile/bets">
+                    <button className="w-full py-2 rounded font-medium transition-all bg-[#29C5F6] hover:bg-[#20A7D8] text-white">
+                      See More
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            )}
+            {selectedBets.length > 0 && activeTab === "bettingSlip" && (
               <div className="border-t border-[#1E1E1E] p-3">
                 <div className="space-y-2">
                   <div>
@@ -367,7 +486,9 @@ export default function Home() {
 
                   <div className="flex justify-between text-sm">
                     <span>Total Odds</span>
-                    <span className="font-semibold">{calculateTotalOdds().toFixed(2)}</span>
+                    <span className="font-semibold">
+                      {calculateTotalOdds().toFixed(2)}
+                    </span>
                   </div>
 
                   <div className="flex justify-between text-sm">
@@ -381,19 +502,18 @@ export default function Home() {
                     onClick={handlePlaceBet}
                     disabled={betAmount <= 0 || selectedBets.length === 0}
                     className={`w-full py-2 rounded font-medium transition-all
-          ${betAmount > 0 && selectedBets.length > 0
-                        ? 'bg-[#29C5F6] hover:bg-[#20A7D8] text-white'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              ${betAmount > 0 && selectedBets.length > 0
+                        ? "bg-[#29C5F6] hover:bg-[#20A7D8] text-white"
+                        : "bg-gray-600 text-gray-400 cursor-not-allowed"
                       }`}
                   >
-                    {isAuthenticated ? 'Place Bet' : 'Login to Bet'}
+                    {isAuthenticated ? "Place Bet" : "Login to Bet"}
                   </button>
                 </div>
               </div>
             )}
           </div>
         </aside>
-
       </main>
 
       {/* Auth Modal */}
@@ -403,7 +523,6 @@ export default function Home() {
         isSignUp={isSignUp}
         onToggleMode={() => setIsSignUp(!isSignUp)}
       />
-
 
       {/* Footer */}
       <Footer />
